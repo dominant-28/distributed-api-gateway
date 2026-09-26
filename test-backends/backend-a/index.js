@@ -1,7 +1,9 @@
 const express = require('express');
 const app = express();
 const PORT = 7000;
-
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
 app.get('/api/products/:id',(req,res)=>{
     res.json({
         productID : req.params.id,
