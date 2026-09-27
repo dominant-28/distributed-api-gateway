@@ -1,11 +1,9 @@
 package com.gatewayplatform.gatewaynode;
 
-import io.r2dbc.postgresql.message.backend.BackendKeyData;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.List;
@@ -13,20 +11,28 @@ import java.util.List;
 @Service
 public class HealthCheckService {
 
-    public final ReactiveRedisTemplate<String, Object> redisTemplate;
-    public final WebClient webClient = WebClient.builder().build();
-    public HealthCheckService(ReactiveRedisTemplate<String, Object> redisTemplate) {
+    private final ReactiveRedisTemplate<String, Object> redisTemplate;
+    private final LeaderElectionService leaderElectionService;
+    private final WebClient webClient = WebClient.builder().build();
+
+    public HealthCheckService(ReactiveRedisTemplate<String, Object> redisTemplate,
+                              LeaderElectionService leaderElectionService) {
         this.redisTemplate = redisTemplate;
+        this.leaderElectionService = leaderElectionService;
     }
 
-    public List<BackendInstance> KnownBackends = List.of(
-            new BackendInstance("47aa7d01-9499-4400-8c66-99b35cbcbff8","http://localhost:7000"),
-            new BackendInstance("d0440978-7996-428d-8536-1349ce346434","http://localhost:7001")
+    private final List<BackendInstance> knownBackends = List.of(
+            new BackendInstance("backend-a-id-placeholder", "http://localhost:7000"),
+            new BackendInstance("backend-b-id-placeholder", "http://localhost:7001")
     );
 
     @Scheduled(fixedRate = 10000)
-    public void runHealthCheck(){
-        for ( BackendInstance backend : KnownBackends){
+    public void runHealthChecks() {
+        if (!leaderElectionService.isLeader()) {
+            return; // only the leader performs health checks
+        }
+
+        for (BackendInstance backend : knownBackends) {
             webClient.get()
                     .uri(backend.url() + "/health")
                     .retrieve()
@@ -49,7 +55,6 @@ public class HealthCheckService {
         String key = "health:" + backendId;
         return redisTemplate.opsForValue().get(key)
                 .map(val -> "HEALTHY".equals(val))
-                .defaultIfEmpty(true); // assume healthy if not yet checked
+                .defaultIfEmpty(true);
     }
-
 }
