@@ -8,7 +8,7 @@ app.get('/health',(req,res)=>{
 });
 
 app.get('/api/products/:id',(req,res)=>{
-    const shouldFail = Math.random() < 0.3;
+    const shouldFail = Math.random() < 0.9;
     if(shouldFail){
         return res.status(500).json({
             error: "Simulated Failure",
