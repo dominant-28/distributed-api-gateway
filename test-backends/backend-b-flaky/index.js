@@ -8,6 +8,8 @@ app.get('/health',(req,res)=>{
 });
 
 app.get('/api/products/:id',(req,res)=>{
+    const traceId = req.header('X-Trace-Id');
+    console.log(`[backend-b-flaky] trace=${traceId} product=${req.params.id}`);
     const shouldFail = Math.random() < 0.9;
     if(shouldFail){
         return res.status(500).json({
@@ -18,7 +20,8 @@ app.get('/api/products/:id',(req,res)=>{
     return res.json({
         productID : req.params.id,
         name: "Sample Product",
-        serveredBy: "backend-b-flaky"
+        serveredBy: "backend-b-flaky",
+        traceId
     });
 }
 );
