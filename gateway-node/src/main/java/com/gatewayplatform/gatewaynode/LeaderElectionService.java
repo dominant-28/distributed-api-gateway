@@ -1,9 +1,9 @@
 package com.gatewayplatform.gatewaynode;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
-import org.springframework.data.redis.core.types.Expiration;
-import org.springframework.data.redis.connection.RedisStringCommands;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 public class LeaderElectionService {
-
+    private static final Logger log = LoggerFactory.getLogger(LeaderElectionService.class);
     private static final String LEADER_KEY = "leader:gateway-cluster";
     private static final Duration LEASE_TTL = Duration.ofSeconds(10);
 
@@ -47,9 +47,9 @@ public class LeaderElectionService {
             redisTemplate.opsForValue()
                     .setIfAbsent(LEADER_KEY, nodeId, LEASE_TTL)
                     .subscribe(acquired -> {
-                        if (Boolean.TRUE.equals(acquired)) {
+                        if (acquired) {
                             isLeader.set(true);
-                            System.out.println("[" + nodeId + "] became LEADER");
+                            log.info("[{}] became LEADER", nodeId);
                         }
                     });
         }
